@@ -18,7 +18,7 @@ dnf5 install -y \
     ripgrep \
     fd-find \
     bat \
-    exa \
+    eza \
     zoxide
 
 ### Wayland and Graphics Dependencies
@@ -119,11 +119,13 @@ dnf5 install -y \
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/homebrew-setup.sh << 'EOF'
 # Homebrew setup for ars-linux
+# Note: Uses official Homebrew installer from https://brew.sh
 if [ ! -d "/home/linuxbrew/.linuxbrew" ] && [ -n "$PS1" ] && [ "$EUID" -ne 0 ]; then
     if [ ! -f "$HOME/.homebrew-install-attempted" ]; then
         echo "Homebrew is not installed. Would you like to install it? (y/n)"
         read -r response
         if [ "$response" = "y" ]; then
+            # Using the official Homebrew installer (https://brew.sh)
             NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         fi
         touch "$HOME/.homebrew-install-attempted"
@@ -472,8 +474,9 @@ systemctl enable sddm.service
 
 ### Enable essential services
 systemctl enable podman.socket
-systemctl enable pipewire.socket
-systemctl enable pipewire-pulse.socket
+# Enable pipewire services for audio - using service units for better reliability in bootc
+systemctl enable pipewire.service
+systemctl enable pipewire-pulse.service
 systemctl enable wireplumber.service
 
 ### Note about DankMaterialShell
