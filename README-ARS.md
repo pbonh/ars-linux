@@ -35,7 +35,7 @@ ars-linux is built on Universal Blue and provides:
 - Programming languages: Rust, Go, Python 3, Node.js
 - Build tools: gcc, make, cmake, cargo
 - Version control: git
-- Modern CLI tools: ripgrep, fd, bat, exa, zoxide
+- Modern CLI tools: ripgrep, fd, bat, eza, zoxide
 
 ### Package Management
 - **dnf5**: Native Fedora package manager
