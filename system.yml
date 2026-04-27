@@ -12,3 +12,5 @@
       tags: [dnf_repos]
     - role: containers_policy
       tags: [containers_policy]
+    - role: profile_d
+      tags: [profile_d]
