@@ -1,5 +1,5 @@
 ---
-- name: ars-linux user layer
+- name: Apply ars-linux user layer
   hosts: all
   become: false
   gather_facts: true
