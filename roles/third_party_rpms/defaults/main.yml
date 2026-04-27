@@ -1,0 +1,10 @@
+---
+# Pinned at implementation time. `just bump-vivaldi` (added later) maintains the pair.
+ars_vivaldi_version: "7.0.0.0-1"
+ars_vivaldi_sha256: "TO-BE-PINNED-AT-IMPLEMENTATION"
+
+ars_third_party_rpms:
+  - name: vivaldi-stable
+    url: "https://downloads.vivaldi.com/stable/vivaldi-stable-{{ ars_vivaldi_version }}.x86_64.rpm"
+    sha256: "{{ ars_vivaldi_sha256 }}"
+    post_install: relocate_opt
