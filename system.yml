@@ -16,3 +16,5 @@
       tags: [profile_d]
     - role: flatpaks
       tags: [flatpaks]
+    - role: services
+      tags: [services]
