@@ -13,7 +13,7 @@ sync-flatpaks:
     sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags flatpaks
 
 sync-tags TAGS:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags {{TAGS}}
+    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags "{{TAGS}}"
 
 lint:
     yamllint .
@@ -25,4 +25,4 @@ test:
 vm-test BRANCH="main":
     @echo "Boot a Zirconium ISO in quickemu, then inside the guest:"
     @echo "  sudo dnf install -y ansible-core git"
-    @echo "  sudo ansible-pull -U {{repo}} --checkout {{BRANCH}} -i inventory/hosts system.yml"
+    @echo "  sudo ansible-pull -U {{repo}} --checkout \"{{BRANCH}}\" -i inventory/hosts system.yml"
