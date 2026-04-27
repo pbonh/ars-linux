@@ -10,3 +10,5 @@
       tags: [rpm_packages]
     - role: dnf_repos
       tags: [dnf_repos]
+    - role: containers_policy
+      tags: [containers_policy]
