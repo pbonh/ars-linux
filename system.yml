@@ -1,0 +1,8 @@
+---
+- name: ars-linux system layer
+  hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - group_vars/all.yml
+  roles: []
