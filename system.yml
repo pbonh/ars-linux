@@ -18,3 +18,5 @@
       tags: [flatpaks]
     - role: services
       tags: [services]
+    - role: fonts
+      tags: [fonts]
