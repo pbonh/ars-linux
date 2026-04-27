@@ -8,3 +8,5 @@
   roles:
     - role: rpm_packages
       tags: [rpm_packages]
+    - role: dnf_repos
+      tags: [dnf_repos]
