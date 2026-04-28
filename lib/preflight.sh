@@ -9,6 +9,11 @@ _get_euid() {
 run_preflight() {
   log::section "Phase 0 — preflight"
 
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then
+    log::info "[dry-run] preflight checks skipped"
+    return 0
+  fi
+
   local uid
   uid=$(_get_euid)
   if [[ "$uid" -eq 0 ]]; then
