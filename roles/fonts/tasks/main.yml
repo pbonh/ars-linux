@@ -1,7 +1,0 @@
----
-# This role contributes only to ars_rpm_packages_all (consumed by bootc_image).
-# Nothing to apply on the live host — fc-cache runs inside the Containerfile build.
-- name: Fonts role placeholder (no live-host actions)
-  ansible.builtin.debug:
-    msg: "ars_extra_fonts={{ ars_extra_fonts }} (consumed by bootc_image Containerfile)"
-  changed_when: false

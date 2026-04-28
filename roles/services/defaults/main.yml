@@ -1,5 +1,0 @@
----
-ars_services_enabled:
-  - docker.service
-  - containerd.service
-  - podman.socket

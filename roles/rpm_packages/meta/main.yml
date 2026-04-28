@@ -1,7 +1,0 @@
----
-galaxy_info:
-  author: pbonh
-  description: Package list (vars-only) for the ars-linux derived image
-  license: MIT
-  min_ansible_version: "2.16"
-dependencies: []

@@ -1,4 +1,0 @@
----
-ars_flatpaks_preinstall_dir: /usr/share/flatpak/preinstall.d
-ars_flatpaks_remotes_dir: /usr/share/flatpak/remotes.d
-ars_flatpaks_preinstall_filename: apps.preinstall

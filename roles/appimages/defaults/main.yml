@@ -1,9 +1,0 @@
----
-ars_cursor_version: "0.43.0"
-ars_cursor_sha256: "TO-BE-PINNED-AT-IMPLEMENTATION"
-
-ars_appimages:
-  - name: cursor
-    url: "https://downloader.cursor.sh/linux/appImage/x64?version={{ ars_cursor_version }}"
-    sha256: "{{ ars_cursor_sha256 }}"
-    desktop_exec_override: "/usr/lib/cursor/cursor"

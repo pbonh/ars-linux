@@ -1,4 +1,0 @@
----
-ars_systemd_user_unit_dir: /usr/lib/systemd/user
-ars_systemd_user_preset_dir: /usr/lib/systemd/user-preset
-ars_systemd_user_preset_filename: 01-ars-linux.preset

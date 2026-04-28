@@ -1,4 +1,0 @@
----
-ars_base_image: ghcr.io/zirconium-dev/zirconium-nvidia:latest
-ars_rpm_packages_extra:
-  - nvidia-container-toolkit
