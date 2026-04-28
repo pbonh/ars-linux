@@ -1,0 +1,14 @@
+[Unit]
+Description=Initial chezmoi apply for ars-linux dotfiles
+Documentation=https://www.chezmoi.io/
+ConditionPathExists=!%h/.config/zirconium/chezmoi
+After=graphical-session-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/chezmoi apply --source {{ ars_zdots_install_path }} \
+    --config %h/.config/zirconium/chezmoi/chezmoi.toml --no-tty --keep-going
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical-session-pre.target

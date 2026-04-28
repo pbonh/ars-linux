@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic chezmoi apply for ars-linux dotfiles
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec={{ ars_chezmoi_update_interval }}
+Persistent=true
+Unit=chezmoi-update.service
+
+[Install]
+WantedBy=timers.target

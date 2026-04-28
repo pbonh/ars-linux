@@ -1,0 +1,12 @@
+[Unit]
+Description=Tailscale system tray applet
+After=graphical-session-pre.target
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/tailscale-systray
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

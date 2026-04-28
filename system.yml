@@ -20,3 +20,5 @@
       tags: [services]
     - role: fonts
       tags: [fonts]
+    - role: systemd_user
+      tags: [systemd_user]
