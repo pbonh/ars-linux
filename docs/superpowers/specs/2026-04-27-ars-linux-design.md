@@ -31,8 +31,10 @@ ars-linux is the **delivery mechanism**; install paths, branding, and the chezmo
 ```
 git push to ars-linux                     (laptop)
         ↓
-$ sudo ansible-pull -U ars-linux \
-    -i inventory/hosts system.yml         (each host, root, on demand)
+$ sudo -v && \
+  ansible-pull -U ars-linux system.yml    (each host, on demand; sudo
+                                          authenticated once, ansible
+                                          escalates per-task non-interactively)
         ↓
 1. dnf_repos                              writes /etc/yum.repos.d/*.repo
 2. bootc_image                            renders Containerfile FROM
@@ -46,8 +48,7 @@ $ sudo ansible-pull -U ars-linux \
         ↓
 reboot (when image switched)              new bootc deployment becomes default
         ↓
-$ ansible-pull -U ars-linux \
-    -i inventory/hosts user.yml           (each host, normal user, on demand)
+$ ansible-pull -U ars-linux user.yml      (each host, normal user, on demand)
         ↓
 5. distrobox                              creates ProtonMail distrobox if missing,
                                           runs `distrobox-export` for desktop integration
@@ -73,10 +74,8 @@ ars-linux/
 ├── README.md
 ├── Justfile                       # `just sync`, `just sync-user`, `just sync-flatpaks`
 ├── ansible.cfg                    # roles_path, defaults, `gather_subset = !all,min`
-├── system.yml                     # root playbook
+├── system.yml                     # root playbook (escalates via become; run after `sudo -v`)
 ├── user.yml                       # user playbook
-├── inventory/
-│   └── hosts                      # all hosts; ansible_connection=local
 ├── host_vars/
 │   ├── laptop.yml
 │   ├── workstation.yml
@@ -102,7 +101,7 @@ ars-linux/
     └── distrobox/                 # user side
 ```
 
-`inventory/hosts` is intentionally minimal; its job is to make `host_vars/<hostname>.yml` resolve under `ansible-pull`'s local execution. The same inventory file would also work for a future push-mode invocation against a remote host.
+There is no inventory file. Each playbook targets `hosts: localhost` with `connection: local`, gathers facts in an unprivileged first play, and a `pre_tasks` block in the second play loads `host_vars/{{ ansible_hostname }}.yml` via `include_vars` if present. This keeps the entrypoint minimal — `sudo -v && ansible-pull -U <repo> system.yml` — without `--limit`, hostname-to-inventory-key matching, or sudo wrapping the whole run.
 
 ## Roles
 
@@ -362,9 +361,9 @@ Tasks:
 
 The `fedora-toolbox:44` choice matches the Fedora release zirconium tracks (per `mkosi.keys/RPM-GPG-KEY-fedora-44-primary` upstream); per-host override available via `host_vars` for hosts on rawhide.
 
-## Multi-host inventory model
+## Multi-host configuration model
 
-`ansible-pull` runs locally; `inventory_hostname` resolves to the result of `hostname` and `host_vars/<hostname>.yml` auto-loads. No SSH, no central inventory server.
+`ansible-pull` runs locally with `hosts: localhost`. The first play (no `become`) gathers facts; the second play stats `host_vars/{{ ansible_hostname }}.yml` and loads it via `include_vars` when present, then runs all roles under `become: true`. No SSH, no inventory file, no central control node.
 
 `group_vars/all.yml`:
 
@@ -405,51 +404,47 @@ ars_rpm_packages_extra:
   - nvidia-container-toolkit
 ```
 
-`inventory/hosts`:
-
-```ini
-[all]
-laptop      ansible_connection=local
-workstation ansible_connection=local
-nvidia-box  ansible_connection=local
-```
+Per-host vars are picked up automatically by hostname — set the system hostname (`sudo hostnamectl set-hostname <name>`) and add `host_vars/<name>.yml` to the repo. If the file is absent, the host inherits `group_vars/all.yml` defaults.
 
 Roles register tags matching their names so subsets can be applied:
 
 ```bash
-sudo ansible-pull -U ... system.yml --tags flatpaks,profile_d
+sudo -v && ansible-pull -U ... system.yml --tags flatpaks,profile_d
 ```
 
 ## User workflow
 
 ```bash
+# Authenticate sudo once; ansible uses the cached credentials non-interactively
+sudo -v
+
 # Apply system changes (rebuilds + bootc switch when inputs change)
-sudo ansible-pull \
-  -U https://github.com/pbonh/ars-linux.git \
-  -i inventory/hosts \
-  system.yml
+ansible-pull -U https://github.com/pbonh/ars-linux.git system.yml
 
 # Apply user changes
-ansible-pull \
-  -U https://github.com/pbonh/ars-linux.git \
-  -i inventory/hosts \
-  user.yml
+ansible-pull -U https://github.com/pbonh/ars-linux.git user.yml
 
 # Reboot if system.yml triggered an image switch
 sudo systemctl reboot
 ```
 
-A `Justfile` provides shorter aliases:
+`ansible.cfg` sets `become_flags = -n`, so ansible escalates via `sudo -n <cmd>` and never tries to drive the password prompt itself. This sidesteps the well-known "timed out waiting for become success or become password prompt" failure on systems where the first sudo invocation is slow (PAM startup, sssd lookups) or where the prompt string doesn't match ansible's detection regex. The trade-off: the user must `sudo -v` (or run a `just` target that does it) before the playbook starts.
+
+`Justfile` aliases handle the dance — `sudo -v` plus a backgrounded keep-alive loop that refreshes the timestamp every 60s for the duration of the run, since cold first builds can exceed sudo's default 5-minute timestamp_timeout:
 
 ```makefile
-sync:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml
+_sudo-keepalive:
+    @sudo -v
+    @( while true; do sudo -n true; sleep 60; kill -0 "$(echo $$)" 2>/dev/null || exit; done ) &
+
+sync: _sudo-keepalive
+    ansible-pull -U {{repo}} system.yml
 
 sync-user:
-    ansible-pull -U {{repo}} -i inventory/hosts user.yml
+    ansible-pull -U {{repo}} user.yml
 
-sync-flatpaks:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags flatpaks
+sync-flatpaks: _sudo-keepalive
+    ansible-pull -U {{repo}} system.yml --tags flatpaks
 
 vm-test BRANCH=`main`:
     # spin up a quickemu VM from upstream Zirconium ISO, ansible-pull --branch={{BRANCH}}

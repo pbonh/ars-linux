@@ -8,22 +8,35 @@ activates it with `bootc switch`. See
 
 ## Usage
 
-On any bootc-enabled host, run as your normal user:
+The recommended entrypoint is `just`, which authenticates sudo once and keeps
+the timestamp cache warm in the background while ansible-pull runs:
 
 ```bash
-# Apply system changes (rebuilds + bootc switch when inputs change)
-ansible-pull -U https://github.com/pbonh/ars-linux.git -K system.yml
+just sync          # apply system changes (rebuilds + bootc switch on change)
+just sync-user     # apply user changes
+just sync-flatpaks # only refresh flatpaks
+```
 
-# Apply user changes
+If you don't want `just`, do the same dance manually:
+
+```bash
+sudo -v   # one-time prompt; cached for the run
+ansible-pull -U https://github.com/pbonh/ars-linux.git system.yml
 ansible-pull -U https://github.com/pbonh/ars-linux.git user.yml
 ```
 
-`-K` (`--ask-become-pass`) prompts once for your sudo password; tasks that need
-root escalate via `become`. The repo clones into `~/.ansible/pull/`. Don't run
-either command with `sudo` — `system.yml` does its own escalation, and
-`user.yml` is meant to run as the desktop user.
+`ansible.cfg` sets `become_flags = -n`, so ansible uses sudo's cached
+credentials non-interactively — there's no `-K` prompt-detection race during
+the run. Don't wrap either invocation with `sudo`; `system.yml` escalates
+per-task via `become`, and `user.yml` is meant to run as the desktop user.
+The repo clones into `~/.ansible/pull/`.
 
-Or: `just sync`, `just sync-user`, `just sync-flatpaks`.
+> **Long runs:** sudo's default credential cache is 5 minutes. `just sync`
+> backgrounds a keep-alive that refreshes it every 60s for the duration of the
+> run. If you run `ansible-pull` by hand for something that takes longer than
+> 5 minutes (e.g., a cold first build), either use `just`, bump
+> `Defaults timestamp_timeout` in `/etc/sudoers.d/ars-linux`, or expect to
+> re-authenticate mid-run.
 
 If `system.yml` triggered a `bootc switch`, a marker appears at
 `/var/lib/ars-linux/reboot-required`. Reboot to activate the new deployment.

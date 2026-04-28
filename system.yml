@@ -1,9 +1,29 @@
 ---
-- name: Gather facts (no privilege escalation)
+- name: Gather facts and load host-specific vars (unprivileged)
   hosts: localhost
   connection: local
   become: false
   gather_facts: true
+  vars_files:
+    - group_vars/all.yml
+  tasks:
+    - name: Detect host-specific vars file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/host_vars/{{ ansible_hostname }}.yml"
+      register: ars_host_vars_file
+
+    - name: Load host-specific vars
+      ansible.builtin.include_vars:
+        file: "{{ ars_host_vars_file.stat.path }}"
+        name: ars_host_vars
+      when: ars_host_vars_file.stat.exists
+
+    - name: Persist host-specific vars across plays
+      ansible.builtin.set_fact:
+        "{{ item.key }}": "{{ item.value }}"
+      loop: "{{ ars_host_vars | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
 
 - name: Apply ars-linux system layer
   hosts: localhost
@@ -12,15 +32,6 @@
   gather_facts: false
   vars_files:
     - group_vars/all.yml
-  pre_tasks:
-    - name: Detect host-specific vars file
-      ansible.builtin.stat:
-        path: "{{ playbook_dir }}/host_vars/{{ ansible_hostname }}.yml"
-      register: ars_host_vars_file
-
-    - name: Load host-specific vars
-      ansible.builtin.include_vars: "{{ ars_host_vars_file.stat.path }}"
-      when: ars_host_vars_file.stat.exists
   roles:
     - role: rpm_packages
       tags: [rpm_packages]
