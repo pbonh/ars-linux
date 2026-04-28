@@ -24,8 +24,38 @@ brew "cmake"
 brew "pkgconf"
 
 # === GUI apps via Flatpak ===
+# Editors / browsers / chat (zinstall additions)
 flatpak "dev.zed.Zed"
 flatpak "com.github.tchx84.Flatseal"
 flatpak "org.mozilla.firefox"
-flatpak "md.obsidian.Obsidian"
 flatpak "com.discordapp.Discord"
+
+# Password manager
+flatpak "com.bitwarden.desktop"
+
+# Container/distrobox GUIs
+flatpak "io.github.DenysMb.Kontainer"
+flatpak "io.github.dvlv.boxbuddyrs"
+
+# Office
+flatpak "com.collaboraoffice.Office"
+
+# AI
+flatpak "com.jeffser.Alpaca"
+
+# Notes
+flatpak "md.obsidian.Obsidian"
+
+# Calculators
+flatpak "org.kde.cantor"
+flatpak "org.kde.kalgebra"
+flatpak "io.github.Qalculate"
+
+# Terminals
+flatpak "app.devsuite.Ptyxis"
+
+# Media
+flatpak "org.kde.plasmatube"
+
+# Cloud
+flatpak "com.github.zocker_160.SyncThingy"
