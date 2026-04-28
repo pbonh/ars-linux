@@ -31,10 +31,9 @@ ars-linux is the **delivery mechanism**; install paths, branding, and the chezmo
 ```
 git push to ars-linux                     (laptop)
         ↓
-$ sudo -v && \
-  ansible-pull -U ars-linux system.yml    (each host, on demand; sudo
-                                          authenticated once, ansible
-                                          escalates per-task non-interactively)
+$ sudo ansible-pull -U ars-linux system.yml
+                                          (each host, on demand; runs as root
+                                          end-to-end)
         ↓
 1. dnf_repos                              writes /etc/yum.repos.d/*.repo
 2. bootc_image                            renders Containerfile FROM
@@ -74,7 +73,7 @@ ars-linux/
 ├── README.md
 ├── Justfile                       # `just sync`, `just sync-user`, `just sync-flatpaks`
 ├── ansible.cfg                    # roles_path, defaults, `gather_subset = !all,min`
-├── system.yml                     # root playbook (escalates via become; run after `sudo -v`)
+├── system.yml                     # root playbook (run with `sudo ansible-pull`)
 ├── user.yml                       # user playbook
 ├── host_vars/
 │   ├── laptop.yml
@@ -101,7 +100,7 @@ ars-linux/
     └── distrobox/                 # user side
 ```
 
-There is no inventory file. Each playbook targets `hosts: localhost` with `connection: local`, gathers facts in an unprivileged first play, and a `pre_tasks` block in the second play loads `host_vars/{{ ansible_hostname }}.yml` via `include_vars` if present. This keeps the entrypoint minimal — `sudo -v && ansible-pull -U <repo> system.yml` — without `--limit`, hostname-to-inventory-key matching, or sudo wrapping the whole run.
+There is no inventory file. Each playbook targets `hosts: localhost` with `connection: local`, gathers facts in an unprivileged first play, and a `pre_tasks` block in the second play loads `host_vars/{{ ansible_hostname }}.yml` via `include_vars` if present. This keeps the entrypoint minimal — `sudo ansible-pull -U <repo> system.yml` — without `--limit` or hostname-to-inventory-key matching. `sudo` wraps the whole run because `system.yml` is meant to execute as root anyway, and that is the simplest, most robust escalation pattern for `ansible-pull`. The two ansible-native alternatives (`-K` / `become_flags=-n`) were tried and found unreliable in practice: ansible's prompt-detection regex races against slow PAM startup on the first sudo invocation, and sudo's per-tty credential cache is not visible to ansible's worker processes (they run on a different controlling tty than the user's interactive shell).
 
 ## Roles
 
@@ -409,42 +408,37 @@ Per-host vars are picked up automatically by hostname — set the system hostnam
 Roles register tags matching their names so subsets can be applied:
 
 ```bash
-sudo -v && ansible-pull -U ... system.yml --tags flatpaks,profile_d
+sudo ansible-pull -U ... system.yml --tags flatpaks,profile_d
 ```
 
 ## User workflow
 
 ```bash
-# Authenticate sudo once; ansible uses the cached credentials non-interactively
-sudo -v
-
 # Apply system changes (rebuilds + bootc switch when inputs change)
-ansible-pull -U https://github.com/pbonh/ars-linux.git system.yml
+sudo ansible-pull -U https://github.com/pbonh/ars-linux.git system.yml
 
-# Apply user changes
+# Apply user changes (run as your normal user, no sudo)
 ansible-pull -U https://github.com/pbonh/ars-linux.git user.yml
 
 # Reboot if system.yml triggered an image switch
 sudo systemctl reboot
 ```
 
-`ansible.cfg` sets `become_flags = -n`, so ansible escalates via `sudo -n <cmd>` and never tries to drive the password prompt itself. This sidesteps the well-known "timed out waiting for become success or become password prompt" failure on systems where the first sudo invocation is slow (PAM startup, sssd lookups) or where the prompt string doesn't match ansible's detection regex. The trade-off: the user must `sudo -v` (or run a `just` target that does it) before the playbook starts.
+`system.yml` runs end-to-end as root via `sudo`. The two ansible-native unprivileged-with-escalation patterns (`-K` / `become_flags=-n`) were prototyped and rolled back: `-K` hits ansible's prompt-detection timeout when the first sudo on a cold box is slow (PAM startup, sssd lookups), and `-n` against a pre-warmed cache fails because Fedora's default `Defaults timestamp_type=tty` makes the cache invisible to ansible's worker processes. `sudo ansible-pull` is the canonical pattern for the ansible-pull ecosystem and is the most robust against host-by-host PAM/sudo configuration drift.
 
-`Justfile` aliases handle the dance — `sudo -v` plus a backgrounded keep-alive loop that refreshes the timestamp every 60s for the duration of the run, since cold first builds can exceed sudo's default 5-minute timestamp_timeout:
+`user.yml` stays unprivileged; it only mutates per-user state.
+
+A `Justfile` provides shorter aliases:
 
 ```makefile
-_sudo-keepalive:
-    @sudo -v
-    @( while true; do sudo -n true; sleep 60; kill -0 "$(echo $$)" 2>/dev/null || exit; done ) &
-
-sync: _sudo-keepalive
-    ansible-pull -U {{repo}} system.yml
+sync:
+    sudo ansible-pull -U {{repo}} system.yml
 
 sync-user:
     ansible-pull -U {{repo}} user.yml
 
-sync-flatpaks: _sudo-keepalive
-    ansible-pull -U {{repo}} system.yml --tags flatpaks
+sync-flatpaks:
+    sudo ansible-pull -U {{repo}} system.yml --tags flatpaks
 
 vm-test BRANCH=`main`:
     # spin up a quickemu VM from upstream Zirconium ISO, ansible-pull --branch={{BRANCH}}
