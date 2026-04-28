@@ -1,10 +1,20 @@
 ---
 - name: Apply ars-linux user layer
-  hosts: all
+  hosts: localhost
+  connection: local
   become: false
   gather_facts: true
   vars_files:
     - group_vars/all.yml
+  pre_tasks:
+    - name: Detect host-specific vars file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/host_vars/{{ ansible_hostname }}.yml"
+      register: ars_host_vars_file
+
+    - name: Load host-specific vars
+      ansible.builtin.include_vars: "{{ ars_host_vars_file.stat.path }}"
+      when: ars_host_vars_file.stat.exists
   roles:
     - role: distrobox
       tags: [distrobox]

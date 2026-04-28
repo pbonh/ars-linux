@@ -6,42 +6,40 @@ Builds a local-only derived OCI image on top of the unmodified upstream image an
 activates it with `bootc switch`. See
 [design spec](docs/superpowers/specs/2026-04-27-ars-linux-design.md) for the full rationale.
 
-## Inventory
-
-`ansible-pull` reads `inventory/hosts` to resolve `inventory_hostname` against
-`host_vars/<hostname>.yml`. Each host runs locally; there is no central control
-node and no SSH:
-
-```ini
-# inventory/hosts
-[all]
-laptop      ansible_connection=local
-workstation ansible_connection=local
-nvidia-box  ansible_connection=local
-```
-
-To add a new host:
-
-1. Add it to `inventory/hosts` with `ansible_connection=local`.
-2. Set the system's hostname to match (`sudo hostnamectl set-hostname <name>`).
-3. Create `host_vars/<name>.yml` with any per-host overrides (or leave empty to
-   inherit `group_vars/all.yml` defaults). See `host_vars/laptop.yml` and
-   `host_vars/nvidia-box.yml` for examples.
-
 ## Usage
+
+On any bootc-enabled host, run as your normal user:
 
 ```bash
 # Apply system changes (rebuilds + bootc switch when inputs change)
-sudo ansible-pull -U https://github.com/pbonh/ars-linux.git -i inventory/hosts system.yml
+ansible-pull -U https://github.com/pbonh/ars-linux.git -K system.yml
 
 # Apply user changes
-ansible-pull -U https://github.com/pbonh/ars-linux.git -i inventory/hosts user.yml
+ansible-pull -U https://github.com/pbonh/ars-linux.git user.yml
 ```
+
+`-K` (`--ask-become-pass`) prompts once for your sudo password; tasks that need
+root escalate via `become`. The repo clones into `~/.ansible/pull/`. Don't run
+either command with `sudo` — `system.yml` does its own escalation, and
+`user.yml` is meant to run as the desktop user.
 
 Or: `just sync`, `just sync-user`, `just sync-flatpaks`.
 
 If `system.yml` triggered a `bootc switch`, a marker appears at
 `/var/lib/ars-linux/reboot-required`. Reboot to activate the new deployment.
+
+## Per-host configuration
+
+Each playbook gathers facts and, if `host_vars/<ansible_hostname>.yml` exists in
+the repo, loads it to override defaults from `group_vars/all.yml`. There is no
+inventory file — `ansible-pull` runs locally on a single machine.
+
+To customize a host:
+
+1. Set its hostname (`sudo hostnamectl set-hostname <name>`).
+2. Create `host_vars/<name>.yml` with any overrides (or omit the file to inherit
+   `group_vars/all.yml` defaults). See `host_vars/laptop.yml` and
+   `host_vars/nvidia-box.yml` for examples.
 
 ## Development
 

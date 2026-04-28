@@ -1,4 +1,0 @@
-[all]
-laptop      ansible_connection=local
-workstation ansible_connection=local
-nvidia-box  ansible_connection=local

@@ -4,16 +4,16 @@ default:
     @just --list
 
 sync:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml
+    ansible-pull -U {{repo}} -K system.yml
 
 sync-user:
-    ansible-pull -U {{repo}} -i inventory/hosts user.yml
+    ansible-pull -U {{repo}} user.yml
 
 sync-flatpaks:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags flatpaks
+    ansible-pull -U {{repo}} -K system.yml --tags flatpaks
 
 sync-tags TAGS:
-    sudo ansible-pull -U {{repo}} -i inventory/hosts system.yml --tags "{{TAGS}}"
+    ansible-pull -U {{repo}} -K system.yml --tags "{{TAGS}}"
 
 lint:
     yamllint .
@@ -25,7 +25,7 @@ test:
 vm-test BRANCH="main":
     @echo "Boot a Zirconium ISO in quickemu, then inside the guest:"
     @echo "  sudo dnf install -y ansible-core git"
-    @echo "  sudo ansible-pull -U {{repo}} --checkout \"{{BRANCH}}\" -i inventory/hosts system.yml"
+    @echo "  ansible-pull -U {{repo}} --checkout \"{{BRANCH}}\" -K system.yml"
 
 bump-vivaldi VERSION:
     #!/usr/bin/env bash
