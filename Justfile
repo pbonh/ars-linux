@@ -3,24 +3,17 @@ repo := "https://github.com/pbonh/ars-linux.git"
 default:
     @just --list
 
-# Authenticate sudo, keep the timestamp cache warm in the background, then
-# run ansible-pull. ansible.cfg sets `become_flags = -n` so ansible uses the
-# cached credentials non-interactively — no prompt-detection race.
-_sudo-keepalive:
-    @sudo -v
-    @( while true; do sudo -n true; sleep 60; kill -0 "$(echo $$)" 2>/dev/null || exit; done ) &
-
-sync: _sudo-keepalive
-    ansible-pull -U {{repo}} system.yml
+sync:
+    sudo ansible-pull -U {{repo}} system.yml
 
 sync-user:
     ansible-pull -U {{repo}} user.yml
 
-sync-flatpaks: _sudo-keepalive
-    ansible-pull -U {{repo}} system.yml --tags flatpaks
+sync-flatpaks:
+    sudo ansible-pull -U {{repo}} system.yml --tags flatpaks
 
-sync-tags TAGS: _sudo-keepalive
-    ansible-pull -U {{repo}} system.yml --tags "{{TAGS}}"
+sync-tags TAGS:
+    sudo ansible-pull -U {{repo}} system.yml --tags "{{TAGS}}"
 
 lint:
     yamllint .
@@ -32,7 +25,7 @@ test:
 vm-test BRANCH="main":
     @echo "Boot a Zirconium ISO in quickemu, then inside the guest:"
     @echo "  sudo dnf install -y ansible-core git"
-    @echo "  sudo -v && ansible-pull -U {{repo}} --checkout \"{{BRANCH}}\" system.yml"
+    @echo "  sudo ansible-pull -U {{repo}} --checkout \"{{BRANCH}}\" system.yml"
 
 bump-vivaldi VERSION:
     #!/usr/bin/env bash
