@@ -7,7 +7,7 @@ re-converge that state on every subsequent run.
 ## Bootstrap
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pbonh/zinstall/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pbonh/ars-linux/main/install.sh | bash
 ```
 
 For re-runs: `git clone` and invoke `./install.sh` directly.

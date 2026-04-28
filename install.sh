@@ -3,6 +3,21 @@
 
 set -Eeuo pipefail
 
+ZINSTALL_REPO_URL="${ZINSTALL_REPO_URL:-https://github.com/pbonh/ars-linux.git}"
+ZINSTALL_CHECKOUT="${ZINSTALL_CHECKOUT:-$HOME/.local/share/zinstall}"
+
+# Bootstrap: when invoked via `curl ... | bash`, BASH_SOURCE[0] is unset.
+# Clone the repo to a stable location and re-exec the local copy.
+if [[ -z "${BASH_SOURCE[0]:-}" ]] || [[ "${BASH_SOURCE[0]:-}" == "bash" ]] || [[ "${BASH_SOURCE[0]:-}" == "/dev/stdin" ]]; then
+  if [[ ! -d "$ZINSTALL_CHECKOUT/.git" ]]; then
+    mkdir -p "$(dirname "$ZINSTALL_CHECKOUT")"
+    git clone --depth 1 "$ZINSTALL_REPO_URL" "$ZINSTALL_CHECKOUT"
+  else
+    git -C "$ZINSTALL_CHECKOUT" pull --ff-only --quiet || true
+  fi
+  exec bash "$ZINSTALL_CHECKOUT/install.sh" "$@"
+fi
+
 ZINSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ZINSTALL_DIR
 

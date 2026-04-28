@@ -8,13 +8,13 @@ This is a humans-only verification run. CI is not gated on it.
 2. Log in as the unprivileged user.
 3. Bootstrap:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/pbonh/zinstall/main/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/pbonh/ars-linux/main/install.sh | bash
    ```
 4. Confirm the run completes; if `REBOOT_NEEDED=1`, accept the prompt or
    `systemctl reboot` manually.
 5. After reboot, clone the repo and re-run:
    ```bash
-   git clone https://github.com/pbonh/zinstall ~/src/zinstall
+   git clone https://github.com/pbonh/ars-linux ~/src/zinstall
    cd ~/src/zinstall
    ./install.sh --no-reboot-prompt
    ```
