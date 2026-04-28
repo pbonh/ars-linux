@@ -26,7 +26,7 @@ log::section() {
 # _run cmd...  — print and execute, or print-only when DRY_RUN=1.
 _run() {
   if [[ "${VERBOSE:-0}" == 1 ]]; then
-    log::info "+ $*"
+    log::info "+$(printf ' %q' "$@")"
   fi
   if [[ "${DRY_RUN:-0}" == 1 ]]; then
     log::info "[dry-run] $*"
