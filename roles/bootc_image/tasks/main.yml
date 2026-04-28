@@ -112,8 +112,14 @@
   changed_when: true
 
 - name: Build derived image
+  # AUDIT_WRITE: required by rpm's audit plugin during dnf install inside
+  #   podman build; without it, the very first `dnf install` fails with
+  #   "failed to connect to audit, ignoring: invalid argument" → transaction
+  #   aborts. SETFCAP: required for packages that set file capabilities at
+  #   install time (glibc, libcap, util-linux, etc.).
   ansible.builtin.command: >-
     podman build --pull=newer
+    --cap-add=AUDIT_WRITE,SETFCAP
     -t {{ ars_local_image_tag }}
     {{ ars_bootc_build_dir }}
   when: ars_bootc_should_build
