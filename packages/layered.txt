@@ -1,10 +1,53 @@
-# Keep this list short. Every entry adds boot time and rebase risk.
-# Prefer Homebrew or Flatpak whenever possible.
+# Mirrors the layered package set baked into pbonh/zirconium.
+# Most target hosts will NOT have these pre-layered, so zinstall installs
+# them via rpm-ostree. Each non-default repo has a .repo file in
+# packages/repos/ that gets dropped into /etc/yum.repos.d/ before install.
 
-# Real Docker daemon (see post-install.d/10-docker.sh for service+group setup).
-# Pulls in the docker-ce repo from packages/repos/docker-ce.repo.
+# === Development tools (default Fedora repos) ===
+glibc-devel
+libstdc++-devel
+gcc-g++
+make
+
+# === Editors and terminals (default Fedora repos) ===
+kitty
+neovim
+
+# === CLI tools (default Fedora repos) ===
+ansible
+fd-find
+ripgrep
+zsh
+
+# === Container/VM tools (default Fedora repos) ===
+distrobox
+fuse
+fuse3
+
+# === Desktop apps (default Fedora repos) ===
+libreoffice
+thunderbird
+
+# === Science (default Fedora repos) ===
+octave
+
+# === Runtime for Codex / general Node tooling (default Fedora repos) ===
+nodejs
+npm
+
+# === Brave browser (repos/brave-browser.repo) ===
+brave-browser
+
+# === Docker CE (repos/docker-ce.repo) ===
+# See post-install.d/10-docker.sh for service+group setup.
 docker-ce
 docker-ce-cli
 containerd.io
 docker-buildx-plugin
 docker-compose-plugin
+
+# === COPR: starship, ghostty, wezterm ===
+# repos/atim-starship.repo, scottames-ghostty.repo, wezfurlong-wezterm-nightly.repo
+starship
+ghostty
+wezterm
