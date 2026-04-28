@@ -32,6 +32,39 @@
   gather_facts: false
   vars_files:
     - group_vars/all.yml
+  pre_tasks:
+    # The retired `containers_policy` role used to drop these files.
+    # They cause a duplicate-namespace error in /etc/containers/registries.d/
+    # because upstream Zirconium now ships its own (zirconium-dev.yaml).
+    # These cleanup tasks remove the orphans; idempotent once the host is clean.
+    - name: Remove orphaned ars-linux registries.d entry
+      ansible.builtin.file:
+        path: /etc/containers/registries.d/zirconium.yaml
+        state: absent
+      tags: [legacy_cleanup, always]
+
+    - name: Remove orphaned ars-linux cosign key
+      ansible.builtin.file:
+        path: /etc/pki/containers/zirconium.pub
+        state: absent
+      tags: [legacy_cleanup, always]
+
+    - name: Check whether upstream ships a factory policy.json
+      ansible.builtin.stat:
+        path: /usr/etc/containers/policy.json
+      register: ars_upstream_policy_json
+      tags: [legacy_cleanup, always]
+
+    - name: Restore /etc/containers/policy.json from upstream factory copy
+      ansible.builtin.copy:
+        remote_src: true
+        src: /usr/etc/containers/policy.json
+        dest: /etc/containers/policy.json
+        owner: root
+        group: root
+        mode: "0644"
+      when: ars_upstream_policy_json.stat.exists
+      tags: [legacy_cleanup, always]
   roles:
     - role: rpm_packages
       tags: [rpm_packages]
