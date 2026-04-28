@@ -11,26 +11,29 @@ setup() {
   mock_cmd bootc 0 "fine"
   mock_cmd sudo 0 ""
   mock_cmd curl 0 ""
+  mock_cmd sleep 0
   echo 'ID=fedora' >"$TEST_TMP/os-release"
   export ZINSTALL_OS_RELEASE="$TEST_TMP/os-release"
+  # Don't fork a real keep-alive subshell during tests.
+  export ZINSTALL_SKIP_KEEPALIVE=1
 }
 teardown() { teardown_zinstall_env; }
 
 @test "run_preflight passes on a valid Fedora bootc host" {
-  EUID=1000 run run_preflight
+  ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -eq 0 ]
 }
 
 @test "run_preflight fails when bootc is missing" {
   rm "$STUB_BIN/bootc"
-  EUID=1000 run run_preflight
+  ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -ne 0 ]
   [[ "$output" == *"bootc"* ]]
 }
 
 @test "run_preflight fails when /etc/os-release is not Fedora-family" {
   echo 'ID=ubuntu' >"$ZINSTALL_OS_RELEASE"
-  EUID=1000 run run_preflight
+  ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -ne 0 ]
   [[ "$output" == *"Fedora"* ]]
 }
@@ -38,19 +41,19 @@ teardown() { teardown_zinstall_env; }
 @test "run_preflight accepts ID_LIKE=fedora" {
   echo 'ID=zirconium' >"$ZINSTALL_OS_RELEASE"
   echo 'ID_LIKE="fedora rhel"' >>"$ZINSTALL_OS_RELEASE"
-  EUID=1000 run run_preflight
+  ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -eq 0 ]
 }
 
 @test "run_preflight refuses to run as root" {
-  EUID=0 run run_preflight
+  ZINSTALL_EUID=0 run run_preflight
   [ "$status" -ne 0 ]
   [[ "$output" == *"root"* ]]
 }
 
 @test "run_preflight fails when network HEAD fails" {
   mock_cmd curl 7 ""  # connection refused
-  EUID=1000 run run_preflight
+  ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -ne 0 ]
   [[ "$output" == *"network"* || "$output" == *"github"* ]]
 }

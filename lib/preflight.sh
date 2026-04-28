@@ -1,9 +1,9 @@
 # shellcheck shell=bash
 # Phase 0 — system preflight.
 
-# Helper to get effective UID (can be mocked in tests via EUID env var)
+# Helper to get effective UID (can be overridden via ZINSTALL_EUID in tests)
 _get_euid() {
-  echo "${EUID:-$(id -u)}"
+  echo "${ZINSTALL_EUID:-${EUID:-$(id -u)}}"
 }
 
 run_preflight() {
@@ -47,8 +47,8 @@ run_preflight() {
   fi
 
   # Background sudo keep-alive — dies with the script.
-  # Skip in test environments to avoid hanging test suites.
-  if [[ -z "${TEST_TMP:-}" ]]; then
+  # Set ZINSTALL_SKIP_KEEPALIVE=1 to disable (e.g. in tests).
+  if [[ "${ZINSTALL_SKIP_KEEPALIVE:-0}" != 1 ]]; then
     ( while true; do sudo -n true 2>/dev/null; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
     ZINSTALL_SUDO_KEEPALIVE_PID=$!
     export ZINSTALL_SUDO_KEEPALIVE_PID
