@@ -45,15 +45,11 @@ log::start_run() {
 }
 
 # _retry cmd...  — run with up to 3 attempts and exponential backoff (1s, 2s, 4s).
-# Honors DRY_RUN by short-circuiting like _run.
+# Delegates to _run, so DRY_RUN/VERBOSE handling is inherited.
 _retry() {
-  if [[ "${DRY_RUN:-0}" == 1 ]]; then
-    log::info "[dry-run] $*"
-    return 0
-  fi
   local n=0 max=3 delay=1
   while (( n < max )); do
-    if "$@"; then return 0; fi
+    if _run "$@"; then return 0; fi
     n=$((n+1))
     if (( n < max )); then
       log::warn "command failed (attempt $n/$max), retrying in ${delay}s: $*"

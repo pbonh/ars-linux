@@ -40,14 +40,15 @@ teardown() { teardown_zinstall_env; }
   [ $((end - start)) -lt 1 ]
 }
 
-@test "_retry returns non-zero after three failures" {
-  cat >"$STUB_BIN/flaky" <<'EOF'
-#!/usr/bin/env bash
-exit 1
-EOF
-  chmod +x "$STUB_BIN/flaky"
+@test "_retry retries exactly three times before giving up" {
+  mock_cmd flaky 1
+  # Stub sleep to avoid actually waiting during the test.
+  mock_cmd sleep 0
   run _retry flaky
   [ "$status" -ne 0 ]
+  local count
+  count=$(wc -l <"$TEST_TMP/calls/flaky.log")
+  [ "$count" -eq 3 ]
 }
 
 @test "_retry honors DRY_RUN" {
