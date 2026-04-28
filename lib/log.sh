@@ -34,3 +34,33 @@ _run() {
   fi
   "$@"
 }
+
+log::start_run() {
+  local dir="$HOME/.cache/zinstall"
+  mkdir -p "$dir"
+  find "$dir" -maxdepth 1 -type f -name 'run-*.log' -mtime +30 -delete 2>/dev/null || true
+  ZINSTALL_RUN_LOG="$dir/run-$(date +%Y%m%dT%H%M%S).log"
+  export ZINSTALL_RUN_LOG
+  : >"$ZINSTALL_RUN_LOG"
+}
+
+# _retry cmd...  — run with up to 3 attempts and exponential backoff (1s, 2s, 4s).
+# Honors DRY_RUN by short-circuiting like _run.
+_retry() {
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then
+    log::info "[dry-run] $*"
+    return 0
+  fi
+  local n=0 max=3 delay=1
+  while (( n < max )); do
+    if "$@"; then return 0; fi
+    n=$((n+1))
+    if (( n < max )); then
+      log::warn "command failed (attempt $n/$max), retrying in ${delay}s: $*"
+      sleep "$delay"
+      delay=$((delay*2))
+    fi
+  done
+  log::error "command failed after $max attempts: $*"
+  return 1
+}
