@@ -6,8 +6,8 @@ ZINSTALL_BREW_INSTALL_URL="${ZINSTALL_BREW_INSTALL_URL:-https://raw.githubuserco
 ZINSTALL_LINUXBREW_PREFIX="${ZINSTALL_LINUXBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
 
 _brew_present() {
-  # Allow overriding for testing (when system brew would interfere)
-  [[ "${ZINSTALL_BREW_MISSING:-0}" == "1" ]] && return 1
+  # Set ZINSTALL_BREW_MISSING=1 to force-skip detection (used by tests).
+  [[ "${ZINSTALL_BREW_MISSING:-0}" == 1 ]] && return 1
   command -v brew >/dev/null 2>&1 || [[ -x "$ZINSTALL_LINUXBREW_PREFIX/bin/brew" ]]
 }
 

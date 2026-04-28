@@ -26,7 +26,7 @@ teardown() { teardown_zinstall_env; }
     run run_brew_install
   [ "$status" -eq 0 ]
   assert_called curl
-  # bash is the system bash since we're not mocking it
+  # bash is the system bash since we're not mocking it.
 }
 
 @test "run_brew_install honors DRY_RUN" {
