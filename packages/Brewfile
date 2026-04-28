@@ -1,0 +1,31 @@
+# === CLI essentials ===
+brew "git"
+brew "gh"
+brew "fzf"
+brew "ripgrep"
+brew "fd"
+brew "bat"
+brew "eza"
+brew "zoxide"
+brew "starship"
+brew "just"
+brew "jq"
+brew "yq"
+brew "chezmoi"
+brew "neovim"
+brew "tmux"
+brew "lazygit"
+
+# === Dev tooling ===
+brew "uv"
+brew "pnpm"
+brew "rustup"
+brew "cmake"
+brew "pkgconf"
+
+# === GUI apps via Flatpak ===
+flatpak "dev.zed.Zed"
+flatpak "com.github.tchx84.Flatseal"
+flatpak "org.mozilla.firefox"
+flatpak "md.obsidian.Obsidian"
+flatpak "com.discordapp.Discord"
