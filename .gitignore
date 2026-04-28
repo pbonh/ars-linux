@@ -1,0 +1,13 @@
+# Logs created at runtime
+.cache/
+*.log
+
+# Editor noise
+*.swp
+.DS_Store
+
+# Bats temp dirs
+/tmp/zinstall-test-*
+
+# Project-local Claude Code plugin clones
+/.claude/plugins/
