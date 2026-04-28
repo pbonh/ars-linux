@@ -141,9 +141,15 @@
   changed_when: false
 
 - name: Extract booted-deployment digest from bootc status
+  # `default(_, true)` returns the default for any falsy value (including None);
+  # plain `default(_)` only catches Undefined and would crash on a fresh host
+  # where `status.booted` is null.
   ansible.builtin.set_fact:
     ars_bootc_booted_digest: >-
-      {{ (ars_bootc_status.stdout | from_json).status.booted.image.imageDigest | default('') }}
+      {{ (((ars_bootc_status.stdout | from_json).status.booted
+            | default({}, true)).image
+          | default({}, true)).imageDigest
+         | default('', true) }}
 
 - name: Switch deployment if digests differ
   ansible.builtin.command: >-
