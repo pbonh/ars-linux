@@ -1,0 +1,51 @@
+FROM {{ ars_base_image }}
+
+# DNF repos staged from roles/dnf_repos
+COPY repos/*.repo /etc/yum.repos.d/
+
+# Layered RPMs (base + per-host extras + COPR/third-party-repo packages + extra fonts)
+RUN dnf -y install {{ (ars_rpm_packages_all + ars_extra_fonts) | join(' ') }} \
+ && dnf clean all
+{% if ars_extra_fonts %}
+RUN fc-cache --force --really-force --system-only
+{% endif %}
+
+{% for rpm in ars_third_party_rpms %}
+# Third-party RPM: {{ rpm.name }}
+RUN curl -fsSL -o /tmp/{{ rpm.name }}.rpm {{ rpm.url }} \
+ && echo "{{ rpm.sha256 }}  /tmp/{{ rpm.name }}.rpm" | sha256sum -c - \
+ && dnf -y install /tmp/{{ rpm.name }}.rpm \
+ && rm /tmp/{{ rpm.name }}.rpm
+{% endfor %}
+
+# /opt -> /usr/lib relocation (brave, vivaldi, cursor)
+COPY relocate-opt.sh /tmp/
+RUN /tmp/relocate-opt.sh && rm /tmp/relocate-opt.sh
+
+{% for ai in ars_appimages %}
+# AppImage: {{ ai.name }}
+RUN install -d /usr/lib/{{ ai.name }} \
+ && curl -fsSL -o /usr/lib/{{ ai.name }}/{{ ai.name | capitalize }}.AppImage {{ ai.url }} \
+ && echo "{{ ai.sha256 }}  /usr/lib/{{ ai.name }}/{{ ai.name | capitalize }}.AppImage" \
+    | sha256sum -c - \
+ && chmod 0755 /usr/lib/{{ ai.name }}/{{ ai.name | capitalize }}.AppImage
+COPY {{ ai.name }}-extract.sh /tmp/
+RUN /tmp/{{ ai.name }}-extract.sh && rm /tmp/{{ ai.name }}-extract.sh
+{% endfor %}
+
+# pbonh/zdots — install path mirrors upstream Zirconium so dot_config/* paths still work
+RUN git clone --depth 1 --branch {{ ars_zdots_branch }} {{ ars_zdots_repo }} {{ ars_zdots_install_path }} \
+ && rm -rf {{ ars_zdots_install_path }}/.git
+
+{% for npm in ars_npm_globals %}
+RUN NPM_CONFIG_PREFIX=/usr npm install -g {{ npm.name }}@{{ npm.version }}
+{% endfor %}
+
+# /var/opt symlinks for immutable app payloads (mirrors existing fork behavior)
+COPY tmpfiles/zirconium-opt.conf /usr/lib/tmpfiles.d/
+
+{% for line in ars_containerfile_extra_lines %}
+{{ line }}
+{% endfor %}
+
+RUN bootc container lint
