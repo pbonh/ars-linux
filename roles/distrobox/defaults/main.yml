@@ -1,0 +1,17 @@
+---
+ars_distrobox_state_dir: "{{ lookup('env', 'HOME') }}/.local/state/ars-linux/distrobox"
+ars_distrobox_apps_dir: "{{ lookup('env', 'HOME') }}/.local/share/applications"
+
+# Pinned at implementation time. `just bump-protonmail` (added later) maintains it.
+ars_protonmail_rpm_url: "https://proton.me/download/mail/linux/1.5.0/ProtonMail-desktop-beta.rpm"
+ars_protonmail_rpm_sha256: "TO-BE-PINNED-AT-IMPLEMENTATION"
+
+ars_distrobox_containers:
+  - name: protonmail
+    image: registry.fedoraproject.org/fedora-toolbox:44
+    rpms:
+      - name: protonmail-desktop-beta
+        url: "{{ ars_protonmail_rpm_url }}"
+        sha256: "{{ ars_protonmail_rpm_sha256 }}"
+    exports:
+      - app: proton-mail

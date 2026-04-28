@@ -1,0 +1,21 @@
+---
+- name: Render enabled profile.d snippets
+  ansible.builtin.template:
+    src: "{{ item.value | regex_replace('\\.sh$', '') }}.sh.j2"
+    dest: "{{ ars_profile_d_dir }}/{{ item.value }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ ars_profile_d_files | dict2items }}"
+  when: ars_profile_d[item.key] | default(false)
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: Remove disabled profile.d snippets
+  ansible.builtin.file:
+    path: "{{ ars_profile_d_dir }}/{{ item.value }}"
+    state: absent
+  loop: "{{ ars_profile_d_files | dict2items }}"
+  when: not (ars_profile_d[item.key] | default(false))
+  loop_control:
+    label: "{{ item.value }}"

@@ -1,0 +1,41 @@
+---
+ars_rpm_packages_base:
+  # Development
+  - glibc-devel
+  - libstdc++-devel
+  - gcc-c++
+  - make
+  # Editors and terminals
+  - kitty
+  - neovim
+  - ghostty
+  - wezterm
+  # CLI tools
+  - ansible
+  - chezmoi
+  - fd-find
+  - ripgrep
+  - starship
+  - zsh
+  # Containers / VMs
+  - distrobox
+  - fuse
+  - fuse3
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  # Browsers
+  - brave-browser
+  # Desktop apps
+  - libreoffice
+  - thunderbird
+  # Science
+  - octave
+  # Codex runtime
+  - nodejs
+  - npm
+
+# Union helper consumed by bootc_image.
+ars_rpm_packages_all: "{{ ars_rpm_packages_base + ars_rpm_packages_extra }}"

@@ -1,0 +1,15 @@
+---
+ars_bootc_min_version: "1.1.0"
+
+# Where the staged build context lives on the host.
+ars_bootc_build_dir: "{{ ars_build_dir }}"
+ars_bootc_state_dir: "{{ ars_state_dir }}"
+ars_bootc_fingerprint_path: "{{ ars_state_dir }}/last-build.fingerprint"
+ars_bootc_reboot_marker: "{{ ars_state_dir }}/reboot-required"
+
+# Inputs unioned for the Containerfile.
+ars_npm_globals: []
+ars_containerfile_extra_lines: []
+
+# Default tag for one-command rollback (reset by the role on each successful switch).
+ars_bootc_keep_previous: true

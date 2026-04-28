@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic chezmoi apply for ars-linux dotfiles
+Documentation=https://www.chezmoi.io/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'yes s | /usr/bin/chezmoi apply --source {{ ars_zdots_install_path }} \
+    --config %h/.config/zirconium/chezmoi/chezmoi.toml --no-tty --keep-going'

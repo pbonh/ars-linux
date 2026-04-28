@@ -1,0 +1,4 @@
+---
+# Extra font *package names*. Appended to the layered RPM list inside the Containerfile.
+# Empty by default — upstream Zirconium already ships the desired font set.
+ars_extra_fonts: []

@@ -1,0 +1,4 @@
+---
+ars_rpm_packages_extra:
+  - powertop
+  - tlp

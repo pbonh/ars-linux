@@ -1,0 +1,7 @@
+{% for app in ars_flatpak_preinstalls %}
+[Flatpak Preinstall {{ app }}]
+Name={{ app }}
+CollectionID=org.flathub.Stable
+RemoteUrl=https://flathub.org/repo/flathub.flatpakrepo
+
+{% endfor %}

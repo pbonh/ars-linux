@@ -1,0 +1,55 @@
+---
+- name: Compute desired RPM hash digest for container {{ container.name }}
+  ansible.builtin.set_fact:
+    ars_distrobox_desired_hash: "{{ container.rpms | map(attribute='sha256') | join(',') }}"
+
+- name: Recreate container if RPM hash drifted or container missing - {{ container.name }}
+  when: (not container_exists) or (container_marker != ars_distrobox_desired_hash)
+  block:
+    - name: Remove stale container if present - {{ container.name }}
+      ansible.builtin.command: distrobox rm --force {{ container.name }}
+      when: container_exists
+      changed_when: true
+
+    - name: Create distrobox container {{ container.name }}
+      ansible.builtin.command: >-
+        distrobox create
+        --image {{ container.image }}
+        --name {{ container.name }}
+        --yes
+      changed_when: true
+
+    - name: Install RPMs inside container {{ container.name }}
+      ansible.builtin.command: >-
+        distrobox enter {{ container.name }} -- bash -lc
+        'set -euo pipefail;
+         curl -fsSL -o /tmp/{{ rpm.name }}.rpm "{{ rpm.url }}";
+         echo "{{ rpm.sha256 }}  /tmp/{{ rpm.name }}.rpm" | sha256sum -c -;
+         sudo dnf -y install /tmp/{{ rpm.name }}.rpm;
+         rm /tmp/{{ rpm.name }}.rpm'
+      loop: "{{ container.rpms }}"
+      loop_control:
+        loop_var: rpm
+        label: "{{ rpm.name }}"
+      changed_when: true
+
+    - name: Persist RPM hash marker for container {{ container.name }}
+      ansible.builtin.copy:
+        dest: "{{ ars_distrobox_state_dir }}/{{ container.name }}.sha256"
+        content: "{{ ars_distrobox_desired_hash }}\n"
+        mode: "0644"
+
+- name: Export apps to host for container {{ container.name }}
+  ansible.builtin.command: >-
+    distrobox enter {{ container.name }} -- distrobox-export --app {{ export.app }}
+  loop: "{{ container.exports | default([]) }}"
+  loop_control:
+    loop_var: export
+    label: "{{ export.app }}"
+  # distrobox-export overwrites the .desktop file with identical content on
+  # repeat runs; reporting changed=true would defeat playbook idempotency.
+  changed_when: false
+
+- name: Refresh user desktop database for container {{ container.name }}
+  ansible.builtin.command: update-desktop-database {{ ars_distrobox_apps_dir }}
+  changed_when: false

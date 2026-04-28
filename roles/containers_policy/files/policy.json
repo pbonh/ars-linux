@@ -1,0 +1,15 @@
+{
+  "default": [{"type": "insecureAcceptAnything"}],
+  "transports": {
+    "docker": {
+      "ghcr.io/zirconium-dev": [
+        {
+          "type": "sigstoreSigned",
+          "keyPath": "/etc/pki/containers/zirconium.pub",
+          "signedIdentity": {"type": "matchRepoDigestOrExact"}
+        }
+      ]
+    },
+    "docker-daemon": {"": [{"type": "insecureAcceptAnything"}]}
+  }
+}
