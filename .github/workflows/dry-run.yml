@@ -1,0 +1,40 @@
+name: dry-run
+on: [push, pull_request]
+
+jobs:
+  zirconium-dry-run:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/zirconium-dev/zirconium:latest
+      options: --user 1000:1000
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Linuxbrew
+        uses: actions/cache@v4
+        with:
+          path: /home/linuxbrew/.linuxbrew
+          key: linuxbrew-${{ runner.os }}-${{ hashFiles('packages/Brewfile') }}
+
+      - name: Lint repo files
+        run: |
+          for f in packages/repos/*.repo; do
+            python3 -c "import configparser,sys; configparser.ConfigParser(strict=False).read('$f')"
+          done
+
+      - name: Lint post-install scripts
+        run: |
+          for f in packages/post-install.d/*.sh; do
+            bash -n "$f"
+            base=$(basename "$f")
+            [[ "$base" =~ ^[0-9]{2}- ]] || { echo "$f missing 2-digit prefix" >&2; exit 1; }
+          done
+
+      - name: Brewfile syntax
+        run: |
+          if command -v brew >/dev/null; then
+            brew bundle check --file=packages/Brewfile || true
+          fi
+
+      - name: Run install.sh in dry-run
+        run: ./install.sh --dry-run --no-reboot-prompt
