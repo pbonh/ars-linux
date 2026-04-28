@@ -1,0 +1,10 @@
+# Keep this list short. Every entry adds boot time and rebase risk.
+# Prefer Homebrew or Flatpak whenever possible.
+
+# Real Docker daemon (see post-install.d/10-docker.sh for service+group setup).
+# Pulls in the docker-ce repo from packages/repos/docker-ce.repo.
+docker-ce
+docker-ce-cli
+containerd.io
+docker-buildx-plugin
+docker-compose-plugin

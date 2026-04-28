@@ -1,0 +1,5 @@
+# Format: <slug>=<command>  OR  bare command
+# Slug auto-derived from executable basename if omitted.
+
+# Example: nothing autostarted by default. Uncomment as needed.
+# flatseal=flatpak run com.github.tchx84.Flatseal
