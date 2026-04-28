@@ -44,3 +44,32 @@ run_brew_install() {
   _brew_shellenv
   log::ok "brew installed"
 }
+
+ZINSTALL_BREWFILE="${ZINSTALL_BREWFILE:-$ZINSTALL_DIR/packages/Brewfile}"
+
+_brewfile_supports_flatpak() {
+  brew bundle --help 2>/dev/null | grep -qi flatpak
+}
+
+run_brewfile() {
+  log::section "Phase 3 — Brewfile"
+
+  if ! _brewfile_supports_flatpak; then
+    log::error "this brew does not understand the 'flatpak' directive — run 'brew update'"
+    return 1
+  fi
+
+  if [[ "${PRUNE:-0}" == 1 ]]; then
+    _run brew bundle cleanup --file="$ZINSTALL_BREWFILE" --force \
+      || { log::error "brew bundle cleanup failed"; return 1; }
+  fi
+
+  if [[ "${UPGRADE:-0}" == 1 ]]; then
+    _run brew bundle install --file="$ZINSTALL_BREWFILE" \
+      || { log::error "brew bundle install failed"; return 1; }
+  else
+    HOMEBREW_BUNDLE_NO_UPGRADE=1 _run brew bundle install --file="$ZINSTALL_BREWFILE" \
+      || { log::error "brew bundle install failed"; return 1; }
+  fi
+  log::ok "Brewfile applied"
+}
