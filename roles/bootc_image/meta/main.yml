@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: pbonh
+  description: Render Containerfile + podman build + bootc switch
+  license: MIT
+  min_ansible_version: "2.16"
+dependencies: []

@@ -1,0 +1,157 @@
+---
+- name: Preflight — bootc present
+  ansible.builtin.command: bootc --version
+  register: ars_bootc_version_raw
+  changed_when: false
+  failed_when: ars_bootc_version_raw.rc != 0
+
+- name: Preflight — podman present
+  ansible.builtin.command: podman --version
+  register: ars_podman_version_raw
+  changed_when: false
+  failed_when: ars_podman_version_raw.rc != 0
+
+- name: Ensure ars-linux state + build dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ ars_bootc_state_dir }}"
+    - "{{ ars_bootc_build_dir }}"
+    - "{{ ars_bootc_build_dir }}/repos"
+    - "{{ ars_bootc_build_dir }}/tmpfiles"
+
+- name: Stage tmpfiles drop-in into build context
+  ansible.builtin.copy:
+    src: zirconium-opt.conf
+    dest: "{{ ars_bootc_build_dir }}/tmpfiles/zirconium-opt.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Stage relocate-opt.sh into build context
+  ansible.builtin.copy:
+    src: relocate-opt.sh
+    dest: "{{ ars_bootc_build_dir }}/relocate-opt.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Stage AppImage extract scripts (one per appimage)
+  ansible.builtin.copy:
+    src: "{{ item.name }}-extract.sh"
+    dest: "{{ ars_bootc_build_dir }}/{{ item.name }}-extract.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ ars_appimages }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Stage repo files into build context
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/roles/dnf_repos/templates/{{ item.value }}"
+    dest: "{{ ars_bootc_build_dir }}/repos/{{ item.key }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ ars_dnf_repos | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Render Containerfile
+  ansible.builtin.template:
+    src: Containerfile.j2
+    dest: "{{ ars_bootc_build_dir }}/Containerfile"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    ars_rpm_packages_all: "{{ ars_rpm_packages_base + ars_rpm_packages_extra }}"
+
+- name: Compute build fingerprint
+  ansible.builtin.shell: |
+    set -euo pipefail
+    cd {{ ars_bootc_build_dir }}
+    find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}'
+  register: ars_bootc_fingerprint_now
+  changed_when: false
+
+- name: Read previous fingerprint
+  ansible.builtin.slurp:
+    src: "{{ ars_bootc_fingerprint_path }}"
+  register: ars_bootc_fingerprint_prev_raw
+  failed_when: false
+
+- name: Decide whether to rebuild
+  ansible.builtin.set_fact:
+    ars_bootc_should_build: >-
+      {{ (ars_bootc_fingerprint_prev_raw.content is not defined)
+         or ((ars_bootc_fingerprint_prev_raw.content | b64decode | trim) != ars_bootc_fingerprint_now.stdout) }}
+
+- name: Check whether the local image already exists
+  ansible.builtin.command: podman image exists {{ ars_local_image_tag }}
+  register: ars_bootc_image_exists
+  changed_when: false
+  failed_when: false
+
+- name: Force rebuild if local image is missing
+  ansible.builtin.set_fact:
+    ars_bootc_should_build: true
+  when: ars_bootc_image_exists.rc != 0
+
+- name: Tag current local image as previous (for one-command rollback)
+  ansible.builtin.command: podman tag {{ ars_local_image_tag }} {{ ars_previous_image_tag }}
+  when:
+    - ars_bootc_keep_previous
+    - ars_bootc_should_build
+    - ars_bootc_image_exists.rc == 0
+  changed_when: true
+
+- name: Build derived image
+  ansible.builtin.command: >-
+    podman build --pull=newer
+    -t {{ ars_local_image_tag }}
+    {{ ars_bootc_build_dir }}
+  when: ars_bootc_should_build
+  register: ars_bootc_build
+  changed_when: ars_bootc_should_build
+
+- name: Persist new fingerprint
+  ansible.builtin.copy:
+    dest: "{{ ars_bootc_fingerprint_path }}"
+    content: "{{ ars_bootc_fingerprint_now.stdout }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  when: ars_bootc_should_build
+
+- name: Read bootc status
+  ansible.builtin.command: bootc status --json
+  register: ars_bootc_status
+  changed_when: false
+
+- name: Get freshly built image digest
+  ansible.builtin.command: >-
+    podman image inspect --format '{{ "{{" }}.Digest{{ "}}" }}' {{ ars_local_image_tag }}
+  register: ars_bootc_built_digest
+  changed_when: false
+
+- name: Extract booted-deployment digest from bootc status
+  ansible.builtin.set_fact:
+    ars_bootc_booted_digest: >-
+      {{ (ars_bootc_status.stdout | from_json).status.booted.image.imageDigest | default('') }}
+
+- name: Switch deployment if digests differ
+  ansible.builtin.command: >-
+    bootc switch --transport containers-storage {{ ars_local_image_tag }}
+  when: ars_bootc_built_digest.stdout != ars_bootc_booted_digest
+  notify: Notify reboot required
+  changed_when: true
+
+- name: Prune dangling images
+  ansible.builtin.command: podman image prune -f
+  changed_when: false

@@ -12,13 +12,19 @@
       tags: [dnf_repos]
     - role: containers_policy
       tags: [containers_policy]
+    - role: third_party_rpms
+      tags: [third_party_rpms]
+    - role: appimages
+      tags: [appimages]
+    - role: fonts
+      tags: [fonts]
+    - role: bootc_image
+      tags: [bootc_image]
     - role: profile_d
       tags: [profile_d]
     - role: flatpaks
       tags: [flatpaks]
-    - role: services
-      tags: [services]
-    - role: fonts
-      tags: [fonts]
     - role: systemd_user
       tags: [systemd_user]
+    - role: services
+      tags: [services]
