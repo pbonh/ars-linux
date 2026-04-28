@@ -46,7 +46,9 @@
   loop_control:
     loop_var: export
     label: "{{ export.app }}"
-  changed_when: true
+  # distrobox-export overwrites the .desktop file with identical content on
+  # repeat runs; reporting changed=true would defeat playbook idempotency.
+  changed_when: false
 
 - name: Refresh user desktop database for container {{ container.name }}
   ansible.builtin.command: update-desktop-database {{ ars_distrobox_apps_dir }}
