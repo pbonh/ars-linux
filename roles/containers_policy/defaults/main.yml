@@ -1,4 +1,0 @@
----
-ars_containers_policy_dest: /etc/containers/policy.json
-ars_containers_registries_d_dir: /etc/containers/registries.d
-ars_containers_pki_dir: /etc/pki/containers

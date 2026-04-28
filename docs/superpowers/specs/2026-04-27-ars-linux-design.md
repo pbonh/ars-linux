@@ -43,7 +43,7 @@ $ sudo ansible-pull -U ars-linux system.yml
 3. bootc_image                            `bootc switch --transport containers-storage
                                           localhost/ars-linux:latest` if digest changed
 4. profile_d, flatpaks, systemd_user,     drop files into /etc and /usr/share, enable
-   services, containers_policy, fonts     services
+   services, fonts                        services
         ↓
 reboot (when image switched)              new bootc deployment becomes default
         ↓
@@ -95,7 +95,6 @@ ars-linux/
     ├── flatpaks/
     ├── systemd_user/              # system side: unit files + user-preset
     ├── services/                  # docker, containerd, podman.socket
-    ├── containers_policy/
     ├── fonts/
     └── distrobox/                 # user side
 ```
@@ -325,10 +324,6 @@ Presets are the canonical systemd mechanism for "enable these for every user on 
 
 Idempotent. `docker` group is already created by upstream Zirconium's sysusers (preserved unchanged in the derived image's `/usr/lib/sysusers.d/`).
 
-### `containers_policy` (system)
-
-Drops `/etc/containers/policy.json` and `/etc/containers/registries.d/*.yaml` to preserve cosign verification of upstream Zirconium's image registry. Installs cosign public keys to `/etc/pki/containers/`. Files mirror the existing fork's contents in `mkosi.extra/usr/share/factory/etc/containers/`.
-
 ### `fonts` (system)
 
 Reserved for future additions. The role exposes `ars_extra_fonts` (default `[]`) which `bootc_image` appends to the Containerfile package list, followed by `fc-cache --force --really-force --system-only`. Empty initially because upstream Zirconium already ships the desired font set; the role exists so that adding a font in the future is one host_var entry, not a Containerfile edit.
@@ -464,7 +459,7 @@ vm-test BRANCH=`main`:
 | `mkosi.extra/usr/lib/sysusers.d/docker.conf` | inherited from upstream Zirconium (no change needed) |
 | `mkosi.extra/usr/lib/tmpfiles.d/zirconium-opt.conf` | `bootc_image` (Containerfile COPY) |
 | `mkosi.extra/usr/share/factory/etc/profile.d/*.sh` | `profile_d` |
-| `mkosi.extra/usr/share/factory/etc/containers/*` | `containers_policy` |
+| `mkosi.extra/usr/share/factory/etc/containers/*` | inherited from upstream Zirconium (no change needed; upstream now ships `policy.json` and `registries.d/zirconium-dev.yaml` directly) |
 | `mkosi.extra/usr/share/flatpak/preinstall.d/apps.preinstall` | `flatpaks` |
 | `mkosi.extra/usr/share/zirconium/zdots` (submodule) | `bootc_image` clones `pbonh/zdots` to `/usr/share/zirconium/zdots/` + `systemd_user` chezmoi services |
 | `mkosi.postinst.chroot` brave/vivaldi/cursor relocation | `bootc_image` `relocate-opt.sh` invoked from Containerfile |

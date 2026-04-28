@@ -37,8 +37,6 @@
       tags: [rpm_packages]
     - role: dnf_repos
       tags: [dnf_repos]
-    - role: containers_policy
-      tags: [containers_policy]
     - role: third_party_rpms
       tags: [third_party_rpms]
     - role: appimages
