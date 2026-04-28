@@ -34,3 +34,9 @@ teardown() { teardown_zinstall_env; }
   [ "$status" -ne 0 ]
   [[ "$output" == *"unknown"* || "$output" == *"unrecognized"* ]]
 }
+
+@test "install.sh rejects --only and --skip together" {
+  run bash "$ZINSTALL_ROOT/install.sh" --only=brew --skip=chezmoi
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"mutually exclusive"* ]]
+}

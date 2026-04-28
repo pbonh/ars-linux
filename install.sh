@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=1 ;;
     --no-reboot-prompt) NO_REBOOT_PROMPT=1 ;;
     --prune) PRUNE=1 ;;
-    -v|--verbose) VERBOSE=1; set -x ;;
+    -v|--verbose) VERBOSE=1 ;;
     --only=*) ONLY="${1#*=}" ;;
     --skip=*) SKIP="${1#*=}" ;;
     *) echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -53,6 +53,8 @@ done
 if [[ -n "$ONLY" && -n "$SKIP" ]]; then
   echo "--only and --skip are mutually exclusive" >&2; exit 2
 fi
+
+[[ "$VERBOSE" == 1 ]] && set -x
 
 # Phase dispatch table (filled in over later tasks).
 log::info "zinstall: parsed flags (placeholder — phases not wired yet)"
