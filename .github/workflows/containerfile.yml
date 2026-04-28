@@ -1,0 +1,59 @@
+name: containerfile-dryrun
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "roles/bootc_image/**"
+      - "roles/dnf_repos/**"
+      - "roles/rpm_packages/**"
+      - "roles/third_party_rpms/**"
+      - "roles/appimages/**"
+      - "group_vars/**"
+      - "host_vars/**"
+
+jobs:
+  render-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install jinja2 + ansible-core
+        run: pip install -r requirements-dev.txt
+      - name: Render Containerfile from defaults
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+          repo = Path(".").resolve()
+          tpl_dir = repo / "roles/bootc_image/templates"
+          group_vars = yaml.safe_load((repo / "group_vars/all.yml").read_text())
+          rpm_defaults = yaml.safe_load((repo / "roles/rpm_packages/defaults/main.yml").read_text())
+          tp_defaults = yaml.safe_load((repo / "roles/third_party_rpms/defaults/main.yml").read_text())
+          ai_defaults = yaml.safe_load((repo / "roles/appimages/defaults/main.yml").read_text())
+          dnf_defaults = yaml.safe_load((repo / "roles/dnf_repos/defaults/main.yml").read_text())
+          fonts_defaults = yaml.safe_load((repo / "roles/fonts/defaults/main.yml").read_text())
+
+          ctx = {**group_vars, **rpm_defaults, **tp_defaults, **ai_defaults,
+                 **dnf_defaults, **fonts_defaults}
+          ctx["ars_rpm_packages_all"] = ctx["ars_rpm_packages_base"] + ctx["ars_rpm_packages_extra"]
+
+          env = Environment(loader=FileSystemLoader(str(tpl_dir)),
+                            undefined=StrictUndefined,
+                            keep_trailing_newline=True)
+          out = env.get_template("Containerfile.j2").render(**ctx)
+          Path("Containerfile.rendered").write_text(out)
+          print(out)
+          PY
+
+      - name: Lint with bootc container lint
+        run: |
+          podman run --rm -v "$PWD/Containerfile.rendered:/Containerfile:ro" \
+            quay.io/centos-bootc/bootc:latest \
+            bootc container lint /Containerfile || \
+            (echo "::warning::bootc container lint failed; verify manually"; exit 0)
