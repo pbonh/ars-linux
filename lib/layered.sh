@@ -47,10 +47,10 @@ run_layered() {
   _drop_repo_files || return 1
 
   if _layering_locked; then
-    log::warn "rpm-ostree LockLayering=true — skipping package install/uninstall"
-    log::warn "  declared packages in $ZINSTALL_LAYERED_LIST cannot be layered on this host;"
-    log::warn "  move them to a BlueBuild recipe or unset LockLayering in /etc/rpm-ostreed.conf"
-    return 0
+    log::error "rpm-ostree LockLayering=true — cannot install declared packages."
+    log::error "  Run the two commands in README.md → 'Prerequisite: enable rpm-ostree layering'"
+    log::error "  to disable LockLayering, then re-run zinstall."
+    return 1
   fi
 
   local declared current to_add to_remove

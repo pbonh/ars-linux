@@ -148,7 +148,7 @@ EOF
   assert_called_with sudo "rpm-ostree uninstall extra-pkg"
 }
 
-@test "run_layered skips install/uninstall when LockLayering=true" {
+@test "run_layered errors out when LockLayering=true (points at README)" {
   echo -e "[Daemon]\nLockLayering=true" >"$TEST_TMP/rpm-ostreed.conf"
   export ZINSTALL_RPM_OSTREED_CONF="$TEST_TMP/rpm-ostreed.conf"
   cat >"$STUB_BIN/rpm-ostree" <<'INNER'
@@ -159,8 +159,9 @@ INNER
   chmod +x "$STUB_BIN/rpm-ostree"
   mkdir -p "$TEST_TMP/calls"
   run run_layered
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
   [[ "$output" == *"LockLayering=true"* ]]
+  [[ "$output" == *"README"* ]]
   if [[ -f "$TEST_TMP/calls/sudo.log" ]]; then
     ! grep -qE "rpm-ostree (install|uninstall)" "$TEST_TMP/calls/sudo.log"
   fi
