@@ -22,6 +22,8 @@ EOF
   export ZINSTALL_LAYERED_LIST="$TEST_TMP/packages/layered.txt"
   export ZINSTALL_REPOS_DIR="$TEST_TMP/packages/repos"
   export ZINSTALL_YUM_REPOS_D="$TEST_TMP/yum.repos.d"
+  # Default: layering allowed (point at a non-existent conf so _layering_locked is false).
+  export ZINSTALL_RPM_OSTREED_CONF="$TEST_TMP/no-rpm-ostreed.conf"
   mock_cmd sudo 0 ""
   mock_cmd jq 0 "[]"
 }
@@ -144,4 +146,22 @@ EOF
   mkdir -p "$TEST_TMP/calls"
   PRUNE=1 run run_layered
   assert_called_with sudo "rpm-ostree uninstall extra-pkg"
+}
+
+@test "run_layered skips install/uninstall when LockLayering=true" {
+  echo -e "[Daemon]\nLockLayering=true" >"$TEST_TMP/rpm-ostreed.conf"
+  export ZINSTALL_RPM_OSTREED_CONF="$TEST_TMP/rpm-ostreed.conf"
+  cat >"$STUB_BIN/rpm-ostree" <<'INNER'
+#!/usr/bin/env bash
+echo "$@" >>"$TEST_TMP/calls/rpm-ostree.log"
+exit 0
+INNER
+  chmod +x "$STUB_BIN/rpm-ostree"
+  mkdir -p "$TEST_TMP/calls"
+  run run_layered
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LockLayering=true"* ]]
+  if [[ -f "$TEST_TMP/calls/sudo.log" ]]; then
+    ! grep -qE "rpm-ostree (install|uninstall)" "$TEST_TMP/calls/sudo.log"
+  fi
 }

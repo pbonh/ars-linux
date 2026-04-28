@@ -26,11 +26,6 @@ run_preflight() {
     return 1
   fi
 
-  if ! bootc status >/dev/null 2>&1; then
-    log::error "bootc status failed — host is not in a usable bootc state"
-    return 1
-  fi
-
   local osr="${ZINSTALL_OS_RELEASE:-/etc/os-release}"
   if [[ ! -r "$osr" ]]; then
     log::error "cannot read $osr"

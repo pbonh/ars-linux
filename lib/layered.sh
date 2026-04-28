@@ -27,6 +27,11 @@ _currently_layered() {
     || true
 }
 
+_layering_locked() {
+  local conf="${ZINSTALL_RPM_OSTREED_CONF:-/etc/rpm-ostreed.conf}"
+  [[ -r "$conf" ]] && grep -Eq '^[[:space:]]*LockLayering[[:space:]]*=[[:space:]]*true' "$conf"
+}
+
 _read_declared_layered() {
   local f="$ZINSTALL_LAYERED_LIST"
   [[ -r "$f" ]] || return 0
@@ -40,6 +45,13 @@ run_layered() {
   log::section "Phase 6 — layered packages"
 
   _drop_repo_files || return 1
+
+  if _layering_locked; then
+    log::warn "rpm-ostree LockLayering=true — skipping package install/uninstall"
+    log::warn "  declared packages in $ZINSTALL_LAYERED_LIST cannot be layered on this host;"
+    log::warn "  move them to a BlueBuild recipe or unset LockLayering in /etc/rpm-ostreed.conf"
+    return 0
+  fi
 
   local declared current to_add to_remove
   declared="$(_read_declared_layered | sort -u)"

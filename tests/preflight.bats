@@ -26,7 +26,9 @@ teardown() { teardown_zinstall_env; }
 
 @test "run_preflight fails when bootc is missing" {
   rm "$STUB_BIN/bootc"
-  ZINSTALL_EUID=1000 run run_preflight
+  # Restrict PATH to STUB_BIN only so the host's /usr/bin/bootc is hidden.
+  # The function returns at the bootc check before needing other binaries.
+  PATH="$STUB_BIN" ZINSTALL_EUID=1000 run run_preflight
   [ "$status" -ne 0 ]
   [[ "$output" == *"bootc"* ]]
 }
