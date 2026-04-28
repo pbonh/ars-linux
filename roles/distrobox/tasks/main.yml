@@ -1,0 +1,40 @@
+---
+- name: Ensure distrobox state dir exists
+  ansible.builtin.file:
+    path: "{{ ars_distrobox_state_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure user applications dir exists
+  ansible.builtin.file:
+    path: "{{ ars_distrobox_apps_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: List existing distrobox containers
+  ansible.builtin.command: distrobox list --no-color
+  register: ars_distrobox_existing
+  changed_when: false
+
+- name: Read RPM marker files
+  ansible.builtin.slurp:
+    src: "{{ ars_distrobox_state_dir }}/{{ item.name }}.sha256"
+  register: ars_distrobox_markers
+  loop: "{{ ars_distrobox_containers }}"
+  loop_control:
+    label: "{{ item.name }}"
+  failed_when: false
+
+- name: Manage each distrobox container
+  ansible.builtin.include_tasks: container.yml
+  loop: "{{ ars_distrobox_containers }}"
+  loop_control:
+    loop_var: container
+    label: "{{ container.name }}"
+  vars:
+    container_marker: >-
+      {{ (ars_distrobox_markers.results
+          | selectattr('item.name', 'equalto', container.name)
+          | list
+          | first).content | default('') | b64decode | trim }}
+    container_exists: "{{ container.name in ars_distrobox_existing.stdout }}"
