@@ -51,3 +51,7 @@ docker-compose-plugin
 starship
 ghostty
 wezterm
+
+# === Tailscale (repos/tailscale.repo) ===
+# See post-install.d/30-tailscale.sh for service setup.
+tailscale
