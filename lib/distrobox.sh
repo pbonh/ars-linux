@@ -56,7 +56,7 @@ _export_for_section() {
   bins="$(_section_value "$ZINSTALL_DISTROBOX_INI" "$name" exported_bins)"
   apps="$(_section_value "$ZINSTALL_DISTROBOX_INI" "$name" exported_apps)"
   for b in $bins; do
-    _run distrobox-export --bin "$b" --export-path "$HOME/.local/bin" --bin-name "$(basename "$b")" \
+    _run distrobox-export --bin "$b" --export-path "$HOME/.local/bin" --app "$(basename "$b")" \
       || log::warn "export bin $b in $name failed"
   done
   for a in $apps; do
